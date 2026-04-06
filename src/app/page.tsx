@@ -1,5 +1,5 @@
-"use client";
+import { LandingHome } from "@/components/landing/LandingHome";
 
 export default function Home() {
-  return <div>Hello, Next.js!</div>;
+  return <LandingHome />;
 }

@@ -1,20 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand Colors */
-  --color-brand-primary: #00e5ff;
-  --color-brand-secondary: #00b4d8;
-  --color-brand-accent: #22d3ee;
+  /* Technical Brutalism core palette */
+  --color-surface: #131313;
+  --color-primary-container: #00f0ff;
+  --color-secondary-container: #13ff43;
+  --color-surface-container-low: #1c1b1b;
+  --color-surface-container-high: #2a2a2a;
+  --color-surface-container-lowest: #161616;
+  --color-surface-bright: #343434;
+  --color-outline-variant: #3b494b;
 
-  /* Neutrals (Dark by default based on your screenshot) */
-  --color-app-bg: #020617;
-  --color-app-surface: #0f172a;
-  --color-app-border: #1e293b;
-  --color-app-text: #f8fafc;
-  --color-app-muted: #94a3b8;
-
-  /* Custom Transitions */
-  --animate-subtle: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --color-app-text: #f5f7f8;
+  --color-app-muted: #b2bcc0;
+  --color-on-primary-fixed: #002022;
 }
 
 /* 2. LIGHT MODE OVERRIDES */
@@ -22,12 +21,50 @@
 @variant light (&:where(.light, .light *));
 
 .light {
-  --color-app-bg: #ffffff;
-  --color-app-surface: #f8fafc;
-  --color-app-border: #e2e8f0;
+  --color-surface: #ffffff;
+  --color-surface-container-low: #f4f4f5;
+  --color-surface-container-high: #ebebed;
+  --color-surface-container-lowest: #fafafa;
+  --color-surface-bright: #e3e4e8;
+  --color-outline-variant: #8a98a2;
+  --color-primary-container: #0ea5b7;
+  --color-secondary-container: #1f9d45;
   --color-app-text: #0f172a;
   --color-app-muted: #64748b;
+  --color-on-primary-fixed: #f8fafc;
+}
 
-  /* Slightly darken the brand for better contrast on white */
-  --color-brand-primary: #0891b2;
+@utility font-body {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+@utility font-mono {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@utility ghost-border {
+  border: 1px solid color-mix(in oklab, var(--color-outline-variant), transparent 80%);
+}
+
+@utility glow-primary {
+  box-shadow: 0 0 12px color-mix(in oklab, var(--color-primary-container), transparent 70%);
+}
+
+@utility glow-secondary {
+  box-shadow: 0 0 12px color-mix(in oklab, var(--color-secondary-container), transparent 70%);
+}
+
+@utility grid-paper {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--color-outline-variant), transparent 90%) 1px,
+    transparent 1px
+  );
+  background-size: 1.75rem 1.75rem;
+}
+
+html.theme-transition,
+html.theme-transition * {
+  transition-property: background-color, color, border-color, fill, stroke;
+  transition-duration: 280ms;
+  transition-timing-function: ease-in-out;
 }
