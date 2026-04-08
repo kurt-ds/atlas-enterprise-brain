@@ -31,11 +31,13 @@ export function LandingNav({
   githubUrl,
   theme,
   onToggleTheme,
+  showSectionNav = true,
 }: {
   active: SectionId;
   githubUrl: string;
   theme: "light" | "dark";
   onToggleTheme: () => void;
+  showSectionNav?: boolean;
 }) {
   return (
     <header className="fixed top-0 z-50 w-full bg-surface/90 backdrop-blur-sm transition-colors duration-300">
@@ -47,22 +49,24 @@ export function LandingNav({
           atlas
         </Link>
 
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
-          <NavAnchor href="#the-tech" isActive={active !== "flow"}>
-            the tech
-          </NavAnchor>
-          <NavAnchor href="#the-flow" isActive={active === "flow"}>
-            the flow
-          </NavAnchor>
-          <a
-            href={githubUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-[13px] uppercase text-app-muted transition-colors hover:text-primary-container"
-          >
-            github
-          </a>
-        </nav>
+        {showSectionNav && (
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
+            <NavAnchor href="#the-tech" isActive={active !== "flow"}>
+              the tech
+            </NavAnchor>
+            <NavAnchor href="#the-flow" isActive={active === "flow"}>
+              the flow
+            </NavAnchor>
+            <a
+              href={githubUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-[13px] uppercase text-app-muted transition-colors hover:text-primary-container"
+            >
+              github
+            </a>
+          </nav>
+        )}
 
         <div className="flex items-center gap-2">
           <button
@@ -74,10 +78,10 @@ export function LandingNav({
             {theme === "dark" ? "> LIGHT_MODE" : "> DARK_MODE"}
           </button>
           <Link
-            href="/dashboard"
+            href="/login"
             className="bg-primary-container px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-on-primary-fixed transition-opacity hover:opacity-90 sm:px-5 sm:text-xs"
           >
-            GET_STARTED
+            LOGIN
           </Link>
         </div>
       </div>
