@@ -1,8 +1,19 @@
 import { groq } from "@ai-sdk/groq";
 import { streamText, convertToModelMessages } from "ai";
 import { getContext } from "@/lib/retrieve";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
+  // Authenticate the user
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const { messages } = await req.json();
 
   // Get the last message
@@ -23,10 +34,10 @@ export async function POST(req: Request) {
     throw new Error("No text found in user message");
   }
 
-  // 1. Get relevant data from Supabase using the extracted string
-  const context = await getContext(userQuery);
+  // 1. Get relevant data from Supabase (scoped to this user's documents)
+  const context = await getContext(supabase, userQuery, user.id);
 
-  console.log("Retrieved Context:", context); // Debug log to verify context retrieval
+  console.log("Retrieved Context:", context);
 
   // 2. Feed the context into Llama
   const result = streamText({

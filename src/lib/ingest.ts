@@ -1,14 +1,14 @@
 import { extractText, getDocumentProxy } from "unpdf";
 import { pipeline } from "@huggingface/transformers";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
-export async function ingestPDF(buffer: Buffer, fileName: string) {
+export async function ingestPDF(
+  supabase: SupabaseClient,
+  buffer: Buffer,
+  fileName: string,
+  userId: string,
+) {
   try {
     // 1. Load the PDF into a proxy (converts Buffer to Uint8Array automatically)
     const pdf = await getDocumentProxy(new Uint8Array(buffer));
@@ -33,7 +33,7 @@ export async function ingestPDF(buffer: Buffer, fileName: string) {
       throw new Error("PDF extraction returned no usable text content.");
     }
 
-    // 3. Chunking & Embedding (Same as before)
+    // 3. Chunking & Embedding
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,
       chunkOverlap: 200,
@@ -56,11 +56,17 @@ export async function ingestPDF(buffer: Buffer, fileName: string) {
       });
       const embedding = Array.from(output.data);
 
-      await supabase.from("documents").insert({
+      const { error } = await supabase.from("documents").insert({
         content: chunk.pageContent,
         metadata: { fileName, totalPages },
         embedding,
+        user_id: userId,
       });
+
+      if (error) {
+        console.error("Insert error:", error);
+        throw error;
+      }
     }
 
     console.log("Brain updated successfully.");

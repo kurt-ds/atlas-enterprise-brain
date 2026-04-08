@@ -1,12 +1,11 @@
 import { pipeline } from "@huggingface/transformers";
-import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
-export async function getContext(query: string) {
+export async function getContext(
+  supabase: SupabaseClient,
+  query: string,
+  userId: string,
+) {
   // Guard clause to prevent the Hugging Face error
   if (!query || typeof query !== "string") {
     console.warn("Retriever received invalid query:", query);
@@ -23,11 +22,12 @@ export async function getContext(query: string) {
 
   console.log("Vector length:", embedding.length); // Should log 384
 
-  // 2. Call the RPC function we created in Supabase
+  // 2. Call the RPC function we created in Supabase (scoped to user)
   const { data: documents, error } = await supabase.rpc("match_documents", {
     query_embedding: embedding,
-    match_threshold: -1.0, // Adjust this based on how strict you want the search to be
-    match_count: 5, // Top 5 most relevant chunks
+    match_threshold: -1.0,
+    match_count: 5,
+    filter_user_id: userId,
   });
 
   console.log("Docs found:", documents?.length);
