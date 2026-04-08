@@ -2,6 +2,8 @@
 
 import { useState, useActionState, useEffect, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { uploadAction } from "@/app/actions/upload";
 import { logoutAction } from "@/app/actions/auth";
 import {
@@ -389,7 +391,13 @@ export default function EnterpriseDashboard() {
                   }`}
                 >
                   {m.parts.map((part, i) =>
-                    part.type === "text" ? <p key={i}>{part.text}</p> : null,
+                    part.type === "text" ? (
+                      <div key={i} className="prose-atlas">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {part.text}
+                        </ReactMarkdown>
+                      </div>
+                    ) : null,
                   )}
                 </div>
               </div>
