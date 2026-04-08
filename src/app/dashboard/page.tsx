@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useEffect, useCallback } from "react";
+import { useState, useActionState, useEffect, useCallback, startTransition } from "react";
 import { useChat } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -114,13 +114,15 @@ export default function EnterpriseDashboard() {
     setStagedFile(file);
   };
 
-  const handleUploadSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUploadSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!stagedFile || isUploading) return;
 
     const data = new FormData();
     data.append("file", stagedFile);
-    await formAction(data);
+    startTransition(() => {
+      formAction(data);
+    });
     setStagedFile(null);
   };
 
