@@ -1,19 +1,33 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
-import { uploadAction, UploadState } from "@/app/actions/upload";
+import { uploadAction } from "@/app/actions/upload";
 
 export default function EnterpriseDashboard() {
-  // 1. Chat State
   const [chatInput, setChatInput] = useState("");
   const { messages, sendMessage, status } = useChat();
 
-  // 2. Upload State
   const [uploadState, formAction, isUploading] = useActionState(
     uploadAction,
     null,
   );
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const savedTheme = window.localStorage.getItem("atlas-theme");
+    const systemIsLight = window.matchMedia(
+      "(prefers-color-scheme: light)",
+    ).matches;
+    const initialTheme =
+      savedTheme === "light" || savedTheme === "dark"
+        ? (savedTheme as "light" | "dark")
+        : systemIsLight
+          ? "light"
+          : "dark";
+
+    root.classList.toggle("light", initialTheme === "light");
+  }, []);
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,21 +37,22 @@ export default function EnterpriseDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 text-black">
-      {/* --- SIDEBAR: Document Management --- */}
-      <aside className="w-80 border-r bg-white p-6 flex flex-col gap-6">
+    <div className="flex min-h-screen bg-surface text-app-text transition-colors duration-300 selection:bg-primary-container/30 selection:text-app-text">
+      <aside className="flex w-80 shrink-0 flex-col gap-6 bg-surface-container-low p-6">
         <div>
-          <h2 className="text-xl font-bold text-blue-600 mb-1">Atlas Brain</h2>
-          <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold">
-            Knowledge Manager
+          <h2 className="mb-1 font-mono text-xl font-bold lowercase tracking-tight text-app-text">
+            atlas brain
+          </h2>
+          <p className="font-mono text-[11px] uppercase tracking-widest text-app-muted">
+            {"// knowledge_manager"}
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <form action={formAction} className="flex flex-col gap-3">
-            <label className="group flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all text-center px-4">
-              <span className="text-sm text-gray-500 font-medium group-hover:text-blue-600">
-                {isUploading ? "Syncing..." : "Drop PDF here"}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <form action={formAction} className="flex flex-col gap-4">
+            <label className="group flex min-h-32 w-full cursor-pointer flex-col items-center justify-center bg-surface-container-high px-4 py-8 text-center ghost-border border-dashed transition-colors hover:bg-surface-bright">
+              <span className="font-mono text-xs uppercase tracking-wide text-app-muted transition-colors group-hover:text-primary-container">
+                {isUploading ? "[ SYNCING... ]" : "[ DROP_PDF ]"}
               </span>
               <input
                 type="file"
@@ -50,77 +65,85 @@ export default function EnterpriseDashboard() {
             <button
               type="submit"
               disabled={isUploading}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 transition-all"
+              className="glow-primary flex h-12 w-full items-center justify-center bg-primary-container font-mono text-sm font-bold uppercase tracking-wide text-on-primary-fixed transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {isUploading ? "Processing..." : "Add to Knowledge"}
+              {isUploading ? "PROCESSING..." : "> ADD_TO_KNOWLEDGE"}
             </button>
             {uploadState?.success && (
-              <p className="text-green-500 text-xs text-center font-medium">
-                ✓ Document internalized
+              <p className="text-center font-mono text-xs font-medium text-secondary-container">
+                [ ✓ ] document internalized
               </p>
             )}
           </form>
         </div>
       </aside>
 
-      {/* --- MAIN: AI Chat Interface --- */}
-      <main className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 pb-32">
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-surface">
+        <div className="grid-paper flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-8 pb-36 sm:px-10">
           {messages.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
-              <div className="w-16 h-16 bg-gray-200 rounded-full mb-4" />
-              <p className="text-lg font-medium">Your Brain is ready.</p>
-              <p className="text-sm">
-                Upload a PDF and ask me anything about it.
+            <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
+              <p className="mb-3 font-mono text-3xl text-primary-container/35">
+                [ ]
+              </p>
+              <p className="mb-2 font-mono text-lg font-medium lowercase text-app-text">
+                your brain is ready
+              </p>
+              <p className="max-w-md font-body text-sm leading-relaxed text-app-muted">
+                Upload a PDF and ask anything about it.
               </p>
             </div>
           )}
 
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
-            >
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+            {messages.map((m) => (
               <div
-                className={`p-4 rounded-2xl max-w-[80%] shadow-sm leading-relaxed ${
-                  m.role === "user"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white border border-gray-100 text-gray-800"
-                }`}
+                key={m.id}
+                className={`flex flex-col gap-1 ${m.role === "user" ? "items-end" : "items-start"}`}
               >
-                {m.parts.map((part, i) =>
-                  part.type === "text" ? <p key={i}>{part.text}</p> : null,
-                )}
+                <span className="font-mono text-[10px] uppercase tracking-wider text-app-muted">
+                  {m.role === "user" ? "[ operator ]" : "[ atlas ]"}
+                </span>
+                <div
+                  className={`max-w-[85%] px-5 py-4 font-body text-sm leading-relaxed sm:max-w-[80%] ${
+                    m.role === "user"
+                      ? "bg-primary-container text-on-primary-fixed"
+                      : "ghost-border bg-surface-container-high text-app-text"
+                  }`}
+                >
+                  {m.parts.map((part, i) =>
+                    part.type === "text" ? <p key={i}>{part.text}</p> : null,
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-          {status === "streaming" && (
-            <div className="text-xs text-blue-500 font-bold animate-pulse">
-              ATLAS IS THINKING...
-            </div>
-          )}
+            ))}
+            {status === "streaming" && (
+              <p className="font-mono text-xs font-bold uppercase tracking-wide text-primary-container animate-pulse">
+                &gt; atlas is thinking...
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Input Area */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-surface via-surface/90 to-transparent" />
+
+        <div className="absolute bottom-0 left-0 right-0 px-6 pb-8 pt-4 sm:px-10">
           <form
             onSubmit={handleChatSubmit}
-            className="max-w-3xl mx-auto relative group"
+            className="relative mx-auto max-w-3xl"
           >
             <input
-              className="w-full p-5 pr-20 bg-white border border-gray-200 rounded-2xl shadow-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-black"
+              className="w-full border-b border-outline-variant bg-surface-container-low px-4 py-4 pr-28 font-mono text-sm text-app-text placeholder:text-app-muted/40 focus:border-primary-container focus:outline-none disabled:opacity-50"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Query your internal data..."
+              placeholder="query your internal data..."
               disabled={status !== "ready"}
             />
             <button
               type="submit"
-              className="absolute right-3 top-3 bottom-3 bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 transition-all"
+              className="absolute right-0 top-1/2 h-10 -translate-y-1/2 bg-primary-container px-6 font-mono text-sm font-bold uppercase tracking-wide text-on-primary-fixed transition-opacity hover:opacity-90 disabled:opacity-50"
               disabled={!chatInput.trim() || status !== "ready"}
             >
-              Send
+              send
             </button>
           </form>
         </div>
