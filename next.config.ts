@@ -1,12 +1,9 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
-  reactCompiler: true,
-  serverExternalPackages: ["@huggingface/transformers", "onnxruntime-node"],
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  serverExternalPackages: ["@huggingface/transformers"],
   experimental: {
     serverActions: {
-      bodySizeLimit: "10mb", // Adjust based on your PDF sizes
+      bodySizeLimit: "10mb",
     },
   },
 };
