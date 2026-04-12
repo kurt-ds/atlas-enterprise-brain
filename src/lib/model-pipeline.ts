@@ -1,4 +1,10 @@
-import { pipeline, FeatureExtractionPipeline } from "@huggingface/transformers";
+import { env, pipeline, FeatureExtractionPipeline } from "@huggingface/transformers";
+
+// Configuration to prevent native binary crashes on Vercel
+env.allowLocalModels = false;
+if (env.backends?.onnx?.wasm) {
+  env.backends.onnx.wasm.proxy = false;
+}
 
 const globalAny = global as any;
 
