@@ -1,21 +1,18 @@
-import { env, pipeline, FeatureExtractionPipeline } from "@huggingface/transformers";
-
-// Configuration to prevent native binary crashes on Vercel
-env.allowLocalModels = false;
-if (env.backends?.onnx?.wasm) {
-  env.backends.onnx.wasm.proxy = false;
-}
-
 const globalAny = global as any;
 
 /**
- * Singleton pattern for HuggingFace Transformers.
- * By caching the pipeline promise to `globalThis`, we guarantee that Vercel Serverless
- * instances only download/load the 90MB neural net into memory once per active node spin-up.
- * Additionally, caching the raw Promise prevents simultaneous concurrent requests from 
- * redundantly triggering multiple initialization downloads.
+ * Singleton pattern for HuggingFace Transformers using Dynamic Imports.
+ * This prevents the library from loading onto the server until it's actually needed.
  */
-export function getModelPipeline(): Promise<FeatureExtractionPipeline> {
+export async function getModelPipeline() {
+  const { env, pipeline } = await import("@huggingface/transformers");
+
+  // Configuration to prevent native binary crashes on Vercel
+  env.allowLocalModels = false;
+  if (env.backends?.onnx?.wasm) {
+    env.backends.onnx.wasm.proxy = false;
+  }
+
   if (!globalAny._transformerPipeline) {
     console.log("[SERVERLESS COLD START] Initializing HuggingFace Transformer Pipeline...");
     globalAny._transformerPipeline = pipeline(
