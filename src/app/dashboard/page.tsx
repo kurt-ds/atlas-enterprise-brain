@@ -139,7 +139,12 @@ export default function EnterpriseDashboard() {
     const input = chatInput;
     setChatInput("");
     
-    await sendMessage({ text: input });
+    // 1. Generate embedding in browser to avoid Vercel crash
+    const { getBrowserEmbedding } = await import("@/lib/browser-ai");
+    const embedding = await getBrowserEmbedding(input);
+    
+    // 2. Pass embedding to API
+    await sendMessage({ text: input }, { body: { queryEmbedding: embedding } } as any);
 
     // Optionally refetch chats after sending message if new chat was created
     if (messages.length === 0) {

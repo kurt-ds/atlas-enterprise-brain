@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   const rawPayload = await req.json();
   console.log("INCOMING PAYLOAD v6:", JSON.stringify(rawPayload));
-  const { messages, chatId: bodyChatId, id: fallbackId } = rawPayload;
+  const { messages, chatId: bodyChatId, id: fallbackId, queryEmbedding } = rawPayload;
   const searchParams = new URL(req.url).searchParams;
   const chatId = bodyChatId || fallbackId || searchParams.get("id") || searchParams.get("chatId");
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   }
 
   // 1. Get relevant data from Supabase (scoped to this user's documents)
-  const context = await getContext(supabase, userQuery, user.id);
+  const context = await getContext(supabase, userQuery, user.id, queryEmbedding);
 
   console.log("Retrieved Context:", context);
 

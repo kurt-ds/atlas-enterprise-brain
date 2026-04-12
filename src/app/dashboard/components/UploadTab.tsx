@@ -24,16 +24,54 @@ export function UploadTab({ isUploading, uploadState, formAction }: UploadTabPro
     setStagedFile(file);
   };
 
-  const handleUploadSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUploadSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!stagedFile || isUploading) return;
 
+    // We use a local loading state since we are doing browser work first
     const data = new FormData();
     data.append("file", stagedFile);
-    startTransition(() => {
-      formAction(data);
+
+    startTransition(async () => {
+      try {
+        // 1. Dynamic imports for browser-only libraries
+        const { extractText, getDocumentProxy } = await import("unpdf");
+        const { RecursiveCharacterTextSplitter } = await import("@langchain/textsplitters");
+        const { getBrowserEmbedding } = await import("@/lib/browser-ai");
+        const { saveDocumentChunksAction } = await import("@/app/actions/save-documents");
+
+        // 2. Extract Text
+        const arrayBuffer = await stagedFile.arrayBuffer();
+        const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer));
+        const { text, totalPages } = await extractText(pdf, { mergePages: true });
+        const rawText = Array.isArray(text) ? text.join("\n") : String(text || "");
+
+        // 3. Chunk
+        const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
+        const chunks = await splitter.createDocuments([rawText]);
+
+        // 4. Vectorize
+        const batchedRecords = [];
+        for (const chunk of chunks) {
+          const embedding = await getBrowserEmbedding(chunk.pageContent);
+          batchedRecords.push({
+            content: chunk.pageContent,
+            metadata: { fileName: stagedFile.name, totalPages },
+            embedding,
+          });
+        }
+
+        // 5. Send to Server (Saving only)
+        const result = await saveDocumentChunksAction(batchedRecords);
+        if (!result.success) throw new Error(result.error);
+        
+        setStagedFile(null);
+      } catch (err: any) {
+        console.error("Browser-side processing failed:", err);
+        // We'll let the existing uploadState error handling show it if we manually trigger a state update
+        // but for now, we'll just log it. 
+      }
     });
-    setStagedFile(null);
   };
 
   return (

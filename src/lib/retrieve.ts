@@ -1,21 +1,32 @@
-import { getModelPipeline } from "./model-pipeline";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export async function getContext(
   supabase: SupabaseClient,
   query: string,
   userId: string,
+  providedEmbedding?: number[],
 ) {
-  // Guard clause to prevent the Hugging Face error
+  // Guard clause
   if (!query || typeof query !== "string") {
     console.warn("Retriever received invalid query:", query);
     return "";
   }
 
-  // 1. Generate embedding for the user's question
-  const extractor = await getModelPipeline();
-  const output = await extractor(query, { pooling: "mean", normalize: true });
-  const embedding = Array.from(output.data);
+  let embedding = providedEmbedding;
+
+  // If no embedding was provided by the client, try to generate it (will only work in local dev)
+  if (!embedding) {
+    try {
+      const { getModelPipeline } = await import("./model-pipeline");
+      const extractor = await getModelPipeline();
+      const output = await extractor(query, { pooling: "mean", normalize: true });
+      embedding = Array.from(output.data);
+    } catch (err) {
+      console.error("Server-side embedding failed (expected on Vercel):", err);
+      // If we can't generate it, we just return empty context instead of crashing the whole app
+      return "";
+    }
+  }
 
   console.log("Vector length:", embedding.length); // Should log 384
 
