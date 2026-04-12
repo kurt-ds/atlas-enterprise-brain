@@ -1,5 +1,5 @@
 import { extractText, getDocumentProxy } from "unpdf";
-import { pipeline } from "@huggingface/transformers";
+import { getModelPipeline } from "./model-pipeline";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -40,15 +40,16 @@ export async function ingestPDF(
     });
 
     const chunks = await splitter.createDocuments([rawText]);
-    const extractor = await pipeline(
-      "feature-extraction",
-      "Xenova/all-MiniLM-L6-v2",
-    );
+    const extractor = await getModelPipeline();
 
     console.log(
       `Feeding ${chunks.length} chunks from "${fileName}" into the brain...`,
     );
 
+    // BATCH INSERTION: Eliminate Vercel timeout issues by vectorizing locally 
+    // and sending EXACTLY ONE atomic payload to Supabase instead of N individual inserts.
+    const batchedRecords = [];
+    
     for (const chunk of chunks) {
       const output = await extractor(chunk.pageContent, {
         pooling: "mean",
@@ -56,17 +57,20 @@ export async function ingestPDF(
       });
       const embedding = Array.from(output.data);
 
-      const { error } = await supabase.from("documents").insert({
+      batchedRecords.push({
         content: chunk.pageContent,
         metadata: { fileName, totalPages },
         embedding,
         user_id: userId,
       });
+    }
 
-      if (error) {
-        console.error("Insert error:", error);
-        throw error;
-      }
+    // Single atomic HTTP database network call
+    const { error } = await supabase.from("documents").insert(batchedRecords);
+
+    if (error) {
+      console.error("Batch Insert Error:", error);
+      throw error;
     }
 
     console.log("Brain updated successfully.");

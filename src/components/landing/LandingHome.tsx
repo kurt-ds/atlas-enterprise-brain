@@ -171,7 +171,7 @@ export function LandingHome() {
               </p>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <Link
-                  href="/login"
+                  href="/dashboard"
                   className="inline-flex h-12 items-center justify-center bg-primary-container px-8 font-mono text-sm font-bold uppercase tracking-wide text-on-primary-fixed transition-opacity hover:opacity-90"
                 >
                   [ GET STARTED ]
@@ -286,10 +286,10 @@ export function LandingHome() {
               </h2>
               <div className="flex justify-start">
                 <Link
-                  href="/login"
+                  href="/dashboard"
                   className="glow-primary inline-flex h-14 min-w-[240px] items-center justify-center bg-primary-container px-10 font-mono text-sm font-bold uppercase tracking-wide text-on-primary-fixed transition-opacity hover:opacity-90"
                 >
-                  LOGIN_
+                  GET STARTED_
                 </Link>
               </div>
             </div>

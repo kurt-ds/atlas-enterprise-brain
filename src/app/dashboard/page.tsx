@@ -75,7 +75,15 @@ export default function EnterpriseDashboard() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setUserEmail(user?.email ?? null);
+      if (user) {
+        setUserEmail(user.is_anonymous ? "guest mode" : user.email ?? null);
+      } else {
+        supabase.auth.signInAnonymously().then(({ data }) => {
+          if (data.user) {
+            setUserEmail("guest mode");
+          }
+        });
+      }
     });
   }, []);
 
@@ -152,25 +160,37 @@ export default function EnterpriseDashboard() {
         </div>
 
         {/* User info */}
-        <div className="mx-6 mb-4 flex items-center gap-3 bg-surface-container-high px-4 py-3">
-          <div className="flex size-7 shrink-0 items-center justify-center bg-primary-container font-mono text-xs font-bold text-on-primary-fixed">
-            {userEmail?.charAt(0).toUpperCase() ?? "?"}
+        {userEmail && userEmail !== "guest mode" ? (
+          <div className="mx-6 mb-4 flex items-center gap-3 bg-surface-container-high px-4 py-3">
+            <div className="flex size-7 shrink-0 items-center justify-center bg-primary-container font-mono text-xs font-bold text-on-primary-fixed">
+              {userEmail.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-mono text-xs text-app-text">
+                {userEmail}
+              </p>
+            </div>
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="font-mono text-[10px] uppercase tracking-wider text-app-muted transition-colors hover:text-primary-container"
+                title="Sign out"
+              >
+                [exit]
+              </button>
+            </form>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-mono text-xs text-app-text">
-              {userEmail ?? "loading..."}
-            </p>
-          </div>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="font-mono text-[10px] uppercase tracking-wider text-app-muted transition-colors hover:text-primary-container"
-              title="Sign out"
+        ) : userEmail === "guest mode" ? (
+          <div className="mx-6 mb-4 flex items-center justify-center">
+            <a
+              href="/login"
+              className="glow-primary flex h-10 w-full items-center justify-center bg-primary-container font-mono text-[11px] font-bold uppercase tracking-wider text-on-primary-fixed transition-opacity hover:opacity-90"
+              title="Log in or Sign up"
             >
-              [exit]
-            </button>
-          </form>
-        </div>
+              {">"} LOG IN TO SAVE SESSIONS
+            </a>
+          </div>
+        ) : null}
 
         {/* Tab navigation */}
         <div className="mx-6 mb-4 flex gap-1 font-mono text-[10px] sm:text-xs uppercase tracking-wider overflow-x-auto no-scrollbar">

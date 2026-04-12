@@ -1,4 +1,4 @@
-import { pipeline } from "@huggingface/transformers";
+import { getModelPipeline } from "./model-pipeline";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export async function getContext(
@@ -13,10 +13,7 @@ export async function getContext(
   }
 
   // 1. Generate embedding for the user's question
-  const extractor = await pipeline(
-    "feature-extraction",
-    "Xenova/all-MiniLM-L6-v2",
-  );
+  const extractor = await getModelPipeline();
   const output = await extractor(query, { pooling: "mean", normalize: true });
   const embedding = Array.from(output.data);
 

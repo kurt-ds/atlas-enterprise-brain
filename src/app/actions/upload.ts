@@ -3,6 +3,7 @@
 import { ingestPDF } from "@/lib/ingest";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -27,6 +28,12 @@ export async function uploadAction(
     return { error: "You must be logged in to upload documents." };
   }
 
+  // Rate Limiting: 10 document uploads per 60 minutes
+  const rateLimitStatus = enforceRateLimit(`upload_${user.id}`, 10, 60 * 60 * 1000);
+  if (!rateLimitStatus.success) {
+    return { error: "Upload limit exceeded. Please wait before uploading more." };
+  }
+
   const file = formData.get("file") as File;
 
   if (!file || file.type !== "application/pdf") {
@@ -45,8 +52,8 @@ export async function uploadAction(
 
     revalidatePath("/dashboard");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Ingestion Error:", error);
-    return { error: "Failed to process PDF." };
+    return { error: error.message || String(error) };
   }
 }

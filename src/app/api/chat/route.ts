@@ -2,6 +2,7 @@ import { groq } from "@ai-sdk/groq";
 import { streamText, convertToModelMessages } from "ai";
 import { getContext } from "@/lib/retrieve";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   // Authenticate the user
@@ -12,6 +13,12 @@ export async function POST(req: Request) {
 
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  // Rate Limiting: 15 requests per 60 seconds
+  const rateLimitStatus = enforceRateLimit(`chat_${user.id}`, 15, 60000);
+  if (!rateLimitStatus.success) {
+    return new Response("Rate limit exceeded. Please try again later.", { status: 429 });
   }
 
   const rawPayload = await req.json();

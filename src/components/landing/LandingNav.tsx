@@ -78,10 +78,10 @@ export function LandingNav({
             {theme === "dark" ? "> LIGHT_MODE" : "> DARK_MODE"}
           </button>
           <Link
-            href="/login"
+            href="/dashboard"
             className="bg-primary-container px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-on-primary-fixed transition-opacity hover:opacity-90 sm:px-5 sm:text-xs"
           >
-            LOGIN
+            GET STARTED
           </Link>
         </div>
       </div>
