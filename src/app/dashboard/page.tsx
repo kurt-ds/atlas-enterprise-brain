@@ -4,6 +4,7 @@ import { useState, useActionState, useEffect, useCallback, startTransition } fro
 import { useChat } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Menu, X } from "lucide-react";
 import { uploadAction } from "@/app/actions/upload";
 import { logoutAction } from "@/app/actions/auth";
 import {
@@ -22,6 +23,7 @@ import { DocumentsTab } from "./components/DocumentsTab";
 import { HistoryTab } from "./components/HistoryTab";
 
 export default function EnterpriseDashboard() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string>("");
   const [chatInput, setChatInput] = useState("");
   
@@ -147,16 +149,34 @@ export default function EnterpriseDashboard() {
 
   return (
     <div className="flex min-h-screen bg-surface text-app-text transition-colors duration-300 selection:bg-primary-container/30 selection:text-app-text">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-surface-container-highest/80 backdrop-blur-sm md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* ── SIDEBAR ── */}
-      <aside className="flex w-80 shrink-0 flex-col bg-surface-container-low">
+      <aside 
+        className={`fixed inset-y-0 left-0 z-50 flex w-80 shrink-0 flex-col bg-surface-container-low transition-transform duration-300 md:relative md:translate-x-0 ${
+          sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        }`}
+      >
         {/* Header */}
-        <div className="px-6 pt-6 pb-4">
+        <div className="px-6 pt-6 pb-4 relative">
           <h2 className="mb-1 font-mono text-xl font-bold lowercase tracking-tight text-app-text">
             atlas brain
           </h2>
           <p className="font-mono text-[11px] uppercase tracking-widest text-app-muted">
             {"// knowledge_manager"}
           </p>
+          <button 
+            className="absolute right-4 top-6 p-2 text-app-muted md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* User info */}
@@ -264,6 +284,19 @@ export default function EnterpriseDashboard() {
 
       {/* ── MAIN CHAT AREA ── */}
       <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-surface">
+        {/* Mobile Topbar */}
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-outline-variant bg-surface px-4 md:hidden">
+          <div className="flex items-center">
+            <button 
+              onClick={() => setSidebarOpen(true)} 
+              className="p-2 text-app-muted transition-colors hover:text-primary-container"
+            >
+              <Menu size={20} />
+            </button>
+            <span className="ml-2 font-mono text-sm font-bold lowercase text-app-text">atlas brain</span>
+          </div>
+        </div>
+
         <div className="grid-paper flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-8 pb-36 sm:px-10">
           {messages.length === 0 && (
             <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
