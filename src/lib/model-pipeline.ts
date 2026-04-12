@@ -5,10 +5,15 @@ const globalAny = global as any;
  * This prevents the library from loading onto the server until it's actually needed.
  */
 export async function getModelPipeline() {
+  // Force onnxruntime-node to skip loading native bindings
+  // @ts-ignore
+  process.env.ONNX_RUNTIME_NODE_SKIP_BINDING = "true";
+
   const { env, pipeline } = await import("@huggingface/transformers");
 
   // Configuration to prevent native binary crashes on Vercel
   env.allowLocalModels = false;
+  env.allowRemoteModels = true;
   if (env.backends?.onnx?.wasm) {
     env.backends.onnx.wasm.proxy = false;
   }
