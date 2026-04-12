@@ -16,14 +16,7 @@ export function LandingFooter({ githubUrl }: { githubUrl: string }) {
           <span>and late-night vibes by kurt-ds</span>
         </p>
         <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 font-mono sm:justify-end">
-          <a
-            href="https://twitter.com"
-            className="text-app-muted transition-colors hover:text-primary-container"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            _TWITTER
-          </a>
+
           <a
             href={githubUrl}
             className="text-app-muted transition-colors hover:text-primary-container"
@@ -33,21 +26,14 @@ export function LandingFooter({ githubUrl }: { githubUrl: string }) {
             GITHUB
           </a>
           <a
-            href="https://linkedin.com"
+            href="https://www.linkedin.com/in/allen-kurt-delos-santos/"
             className="text-app-muted transition-colors hover:text-primary-container"
             target="_blank"
             rel="noopener noreferrer"
           >
             LINKEDIN
           </a>
-          <a
-            href="https://discord.com"
-            className="text-app-muted transition-colors hover:text-primary-container"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            DISCORD
-          </a>
+
         </div>
       </div>
     </footer>
