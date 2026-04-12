@@ -11,11 +11,26 @@ import {
   deleteUserDocument,
   type UserDocument,
 } from "@/app/actions/documents";
+import {
+  getUserChats,
+  getChatMessages,
+  deleteChat,
+  type ChatSession,
+} from "@/app/actions/chat";
 import { createClient } from "@/lib/supabase/client";
 
 export default function EnterpriseDashboard() {
+  const [currentChatId, setCurrentChatId] = useState<string>("");
   const [chatInput, setChatInput] = useState("");
-  const { messages, sendMessage, status } = useChat();
+  
+  // Set initial chatId on mount to avoid hydration mismatch
+  useEffect(() => {
+    setCurrentChatId(crypto.randomUUID());
+  }, []);
+
+  const { messages, sendMessage, status, setMessages } = useChat({
+    id: currentChatId || "empty",
+  });
 
   const [uploadState, formAction, isUploading] = useActionState(
     uploadAction,
@@ -34,9 +49,15 @@ export default function EnterpriseDashboard() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // Sidebar tab state
-  const [sidebarTab, setSidebarTab] = useState<"upload" | "documents">(
+  const [sidebarTab, setSidebarTab] = useState<"upload" | "documents" | "history">(
     "upload",
   );
+
+  // Chats state
+  const [chats, setChats] = useState<ChatSession[]>([]);
+  const [chatsLoading, setChatsLoading] = useState(true);
+  const [deletingChat, setDeletingChat] = useState<string | null>(null);
+  const [confirmDeleteChat, setConfirmDeleteChat] = useState<string | null>(null);
 
   // Theme init
   useEffect(() => {
@@ -71,9 +92,20 @@ export default function EnterpriseDashboard() {
     setDocsLoading(false);
   }, []);
 
+  // Fetch chats
+  const fetchChats = useCallback(async () => {
+    setChatsLoading(true);
+    const result = await getUserChats();
+    if (result.success) {
+      setChats(result.chats || []);
+    }
+    setChatsLoading(false);
+  }, []);
+
   useEffect(() => {
     fetchDocuments();
-  }, [fetchDocuments]);
+    fetchChats();
+  }, [fetchDocuments, fetchChats]);
 
   // Re-fetch documents after upload succeeds
   useEffect(() => {
@@ -93,11 +125,46 @@ export default function EnterpriseDashboard() {
     setConfirmDelete(null);
   };
 
+  const handleDeleteChat = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingChat(id);
+    const result = await deleteChat(id);
+    if (result.success) {
+      setChats((prev) => prev.filter((c) => c.id !== id));
+      if (currentChatId === id) {
+        handleNewChat();
+      }
+    }
+    setDeletingChat(null);
+    setConfirmDeleteChat(null);
+  };
+
+  const handleSelectChat = async (id: string) => {
+    setCurrentChatId(id);
+    const result = await getChatMessages(id);
+    if (result.success) {
+      setMessages(result.messages);
+    }
+  };
+
+  const handleNewChat = () => {
+    setCurrentChatId(crypto.randomUUID());
+    setMessages([]);
+  };
+
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || status !== "ready") return;
-    await sendMessage({ text: chatInput });
+    
+    const input = chatInput;
     setChatInput("");
+    
+    await sendMessage({ text: input });
+
+    // Optionally refetch chats after sending message if new chat was created
+    if (messages.length === 0) {
+      setTimeout(fetchChats, 2000); 
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -162,11 +229,11 @@ export default function EnterpriseDashboard() {
         </div>
 
         {/* Tab navigation */}
-        <div className="mx-6 mb-4 flex gap-0 font-mono text-xs uppercase tracking-wider">
+        <div className="mx-6 mb-4 flex gap-1 font-mono text-[10px] sm:text-xs uppercase tracking-wider overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setSidebarTab("upload")}
-            className={`flex-1 px-3 py-2 text-center transition-colors ${
+            className={`flex-1 px-2 py-2 text-center transition-colors whitespace-nowrap ${
               sidebarTab === "upload"
                 ? "bg-surface-container-high text-primary-container"
                 : "text-app-muted hover:text-app-text"
@@ -177,18 +244,29 @@ export default function EnterpriseDashboard() {
           <button
             type="button"
             onClick={() => setSidebarTab("documents")}
-            className={`flex-1 px-3 py-2 text-center transition-colors ${
+            className={`flex-1 px-2 py-2 text-center transition-colors whitespace-nowrap ${
               sidebarTab === "documents"
                 ? "bg-surface-container-high text-primary-container"
                 : "text-app-muted hover:text-app-text"
             }`}
           >
-            {">"} documents
+            {">"} docs
             {documents.length > 0 && (
               <span className="ml-1.5 inline-flex items-center justify-center bg-primary-container px-1.5 py-px text-[9px] font-bold text-on-primary-fixed">
                 {documents.length}
               </span>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarTab("history")}
+            className={`flex-1 px-2 py-2 text-center transition-colors whitespace-nowrap ${
+              sidebarTab === "history"
+                ? "bg-surface-container-high text-primary-container"
+                : "text-app-muted hover:text-app-text"
+            }`}
+          >
+            {">"} hist
           </button>
         </div>
 
@@ -276,7 +354,7 @@ export default function EnterpriseDashboard() {
                 </p>
               )}
             </form>
-          ) : (
+          ) : sidebarTab === "documents" ? (
             /* ── DOCUMENTS TAB ── */
             <div className="flex flex-col gap-2">
               {docsLoading ? (
@@ -355,6 +433,95 @@ export default function EnterpriseDashboard() {
                 ))
               )}
             </div>
+          ) : (
+            /* ── CHATS TAB ── */
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handleNewChat}
+                className="group flex w-full items-center justify-center gap-2 bg-surface-container-high px-4 py-3 font-mono text-xs font-medium uppercase tracking-wider text-app-text transition-colors hover:bg-surface-bright hover:text-primary-container"
+              >
+                <span>[+] new session</span>
+              </button>
+              
+              {chatsLoading ? (
+                <p className="py-8 text-center font-mono text-xs uppercase tracking-wide text-app-muted animate-pulse">
+                  loading history...
+                </p>
+              ) : chats.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-8 text-center">
+                  <p className="font-mono text-xs uppercase tracking-wide text-app-muted">
+                    no active sessions
+                  </p>
+                </div>
+              ) : (
+                chats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    onClick={() => handleSelectChat(chat.id)}
+                    className={`group relative flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-surface-bright ${
+                      currentChatId === chat.id
+                        ? "bg-surface-bright border-l-2 border-primary-container"
+                        : "bg-surface-container-high"
+                    }`}
+                  >
+                    {!currentChatId || currentChatId !== chat.id ? (
+                      <div className="mt-1 h-8 w-0.5 shrink-0 bg-secondary-container/30" />
+                    ) : null}
+
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="truncate font-mono text-xs font-medium text-app-text"
+                        title={chat.title}
+                      >
+                        {chat.title}
+                      </p>
+                      <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-app-muted">
+                        {new Date(chat.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    {/* Delete button */}
+                    {confirmDeleteChat === chat.id ? (
+                      <div className="flex shrink-0 gap-1" onClick={e => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteChat(chat.id, e)}
+                          disabled={deletingChat === chat.id}
+                          className="font-mono text-[10px] uppercase tracking-wider text-red-400 transition-colors hover:text-red-300 disabled:opacity-50"
+                        >
+                          {deletingChat === chat.id
+                            ? "[...]"
+                            : "[yes]"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteChat(null);
+                          }}
+                          className="font-mono text-[10px] uppercase tracking-wider text-app-muted transition-colors hover:text-app-text"
+                        >
+                          [no]
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteChat(chat.id);
+                        }}
+                        className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-app-muted opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
+                        title={`Delete ${chat.title}`}
+                      >
+                        [del]
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           )}
         </div>
       </aside>
@@ -392,7 +559,7 @@ export default function EnterpriseDashboard() {
                       : "ghost-border bg-surface-container-high text-app-text"
                   }`}
                 >
-                  {m.parts.map((part, i) =>
+                  {m.parts && m.parts.map((part, i) =>
                     part.type === "text" ? (
                       <div key={i} className="prose-atlas">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>

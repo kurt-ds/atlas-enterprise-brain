@@ -14,7 +14,11 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { messages } = await req.json();
+  const rawPayload = await req.json();
+  console.log("INCOMING PAYLOAD v6:", JSON.stringify(rawPayload));
+  const { messages, chatId: bodyChatId, id: fallbackId } = rawPayload;
+  const searchParams = new URL(req.url).searchParams;
+  const chatId = bodyChatId || fallbackId || searchParams.get("id") || searchParams.get("chatId");
 
   // Get the last message
   const lastMessage = messages[messages.length - 1];
@@ -39,6 +43,34 @@ export async function POST(req: Request) {
 
   console.log("Retrieved Context:", context);
 
+  let activeChatId = chatId;
+
+  if (activeChatId) {
+    // Check if chat exists, if not, create it
+    const { data: chatData, error: readChatError } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("id", activeChatId)
+      .single();
+
+    if (!chatData) {
+      const { error: insertChatError } = await supabase.from("conversations").insert({
+        id: activeChatId,
+        user_id: user.id,
+        title: userQuery.slice(0, 50) + (userQuery.length > 50 ? "..." : ""),
+      });
+      if (insertChatError) console.error("Insert Chat Error:", insertChatError);
+    }
+
+    // Insert user message
+    const { error: insertMsgError } = await supabase.from("chat_messages").insert({
+      conversation_id: activeChatId,
+      role: "user",
+      content: userQuery,
+    });
+    if (insertMsgError) console.error("Insert Message Error:", insertMsgError);
+  }
+
   // 2. Feed the context into Llama
   const result = streamText({
     model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
@@ -48,6 +80,17 @@ export async function POST(req: Request) {
     
     CONTEXT:
     ${context}`,
+    onFinish: async ({ text }) => {
+      // Save assistant messages
+      if (activeChatId && text) {
+        const { error: asstError } = await supabase.from("chat_messages").insert({
+          conversation_id: activeChatId,
+          role: "assistant",
+          content: text,
+        });
+        if (asstError) console.error("Insert Assistant Error:", asstError);
+      }
+    },
   });
 
   return result.toUIMessageStreamResponse();
