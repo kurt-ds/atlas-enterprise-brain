@@ -165,8 +165,7 @@ export function LandingHome() {
               stop command-f&apos;ing your pdfs.
               </h1>
               <p className="mb-12 max-w-2xl text-lg leading-relaxed text-app-muted">
-              Upload PDFs, ask questions in plain language, and get answers with
-              citations back to the document. Built for teams who live in specs,
+              Upload PDFs, ask questions in plain language. Built for teams who live in specs,
               reports, and long-form knowledge—not search boxes.
               </p>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">

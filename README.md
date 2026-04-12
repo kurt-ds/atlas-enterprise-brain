@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ATLAS_ENTERPRISE_BRAIN
 
-## Getting Started
+**stop command-f'ing your pdfs.**
 
-First, run the development server:
+Atlas Enterprise Brain is an advanced, highly optimized Retrieval-Augmented Generation (RAG) platform. It allows users to upload PDF documents, intelligently parse their contents into semantic vectors, and ask plain-language questions relying on the LLM to pull cited context strictly from the uploaded internal data. 
 
+Built for teams who live inside specifications, reports, and long-form knowledgebases—not search boxes.
+
+## Core Architecture
+
+- **Framework**: Next.js 15 (App Router)
+- **Database / Vector Store**: Supabase (PostgreSQL + `pgvector`)
+- **LLM Engine**: Groq (Meta Llama 3 Scout 17B)
+- **Embedding Generation**: Transformers.js (`Xenova/all-MiniLM-L6-v2`) via HuggingFace
+- **PDF Extraction**: `unpdf`
+
+## Key Features
+
+1. **Intelligent Vectorization**: PDFs are extracted, cleaned, and split into overlapping context windows. They are then dynamically vectorized completely on the native Node.js/Edge layer using Transformers.js.
+2. **Serverless Optimized**: Heavily mitigated to sustain Vercel's free-tier Hobby constraints. Integrates zero-cost `globalThis` scoped memory rate-limiting and strictly atomic array-batched Database network payloads to eliminate 10s CPU timeout inflation.
+3. **Ghost Mode (Anonymous State)**: Visitors are organically provisioned invisible, ephemeral identity tokens upon entry. Their uploaded semantic history is aggressively firewalled, and if they elect to register, a backend migration routine transplants the disconnected records successfully over to their authenticated state using secure server bypasses.
+4. **Responsive Layout**: Designed entirely on Tailwind CSS arrays supporting aggressive viewport collapses, mobile off-canvas drawer overlays, and smooth component animations. 
+
+---
+
+## Installation Guide
+
+Follow these steps to deploy Atlas Enterprise Brain locally.
+
+### 1. Clone the repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/kurt-ds/atlas-enterprise-brain.git
+cd atlas-enterprise-brain
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install Dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Database Setup (Supabase)
+You need to provision a PostgreSQL environment capable of processing pgvector matrixes:
+1. Navigate to [Supabase](https://supabase.com/) and create a free project.
+2. Under **Authentication -> Providers**, enable **Anonymous** sign-ins.
+3. Connect into the SQL Editor and execute the schema initialization payloads required to bootstrap your `documents`, `conversations`, and `chat_messages` tables (make sure to deploy Row Level Security!).
+4. Pull your environment tokens from your Project Settings -> API.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Environment Variables
+Create a `.env.local` file at the root level of your directory and insert your integration keys:
 
-## Learn More
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your.anon.jwt"
 
-To learn more about Next.js, take a look at the following resources:
+# WARNING: This requires the explicit Service Role secret bypass key, not the Anon key.
+# Required to natively transplant documents across ephemeral -> authenticated states.
+SUPABASE_SERVICE_ROLE_KEY="your.service_role.jwt"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Groq LLM
+GROQ_API_KEY="gsk_your_groq_api_token"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 5. Initialize the Engine
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) with your browser to witness the system. Upload a PDF, let the machine ingest the vectors, and begin querying!
